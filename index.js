@@ -5,6 +5,7 @@ const Property = require('./models/property.js');
 const cors = require('cors');
 const app = express();
 app.use(cors());
+require('dotenv').config();
 
 app.use(express.json());
 
@@ -221,9 +222,9 @@ app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
-mongoose.connect("mongodb+srv://riya70077:Mute123@backenddb.3tsx9c9.mongodb.net/?retryWrites=true&w=majority&appName=BackendDB").then(()=>{
+mongoose.connect(process.env.MONGO_URI).then(()=>{
   console.log("connected to database");
-  app.listen(5000, ()=>{
+  app.listen(process.env.PORT || 5000, ()=>{
   console.log('server is running on port 5000');
 });
 
