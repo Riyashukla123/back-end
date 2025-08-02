@@ -4,10 +4,16 @@ const User = require('./models/user.js');
 const Property = require('./models/property.js');
 const cors = require('cors');
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: 'GET,POST,PUT,DELETE,OPTIONS',
+  allowedHeaders: 'Content-Type,Authorization'
+}));
 require('dotenv').config();
 
 app.use(express.json());
+
+
 
 app.post('/signup_user', async (req,res) => {
   try{
