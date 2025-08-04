@@ -37,9 +37,14 @@ app.post('/login_user', async (req,res)=>{
   try{
     const {email,password} = req.body;
     const existingUser = await User.findOne({email});
-    if(!existingUser) {
-      return res.status(404).send("email doesn't exist");
-    }
+    if(existingUser.password == password) {
+  const userObj = existingUser.toObject();
+  if (userObj.profileImage) {
+    userObj.profileImage = `http://localhost:5000/${userObj._id}/image?timestamp=${Date.now()}`;
+  }
+  return res.status(200).json(userObj);
+}
+
    if(existingUser.password == password) {
     return res.status(200).json(existingUser);
    }
