@@ -7,12 +7,13 @@ const User = require('./models/user.js');
 const Property = require('./models/property.js');
 const cors = require('cors');
 const app = express();
+require('dotenv').config();
 app.use(cors({
   origin: process.env.FRONTEND_URL,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-require('dotenv').config();
+
 
 app.use(express.json());
 
