@@ -5,9 +5,9 @@ const Property = require('./models/property.js');
 const cors = require('cors');
 const app = express();
 app.use(cors({
-  origin: '*',
-  methods: 'GET,POST,PUT,DELETE,OPTIONS',
-  allowedHeaders: 'Content-Type,Authorization'
+  origin: process.env.FRONTEND_URL,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 require('dotenv').config();
 
