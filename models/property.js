@@ -2,6 +2,10 @@ const mongoose = require('mongoose');
 
 const PropertySchema= mongoose.Schema(
   {
+    imgUrl:{
+      type:String,
+      required:[true, "please add an image of the property"]
+    },
     name:{
       type:String,
       required:[true, "Please enter the name"]

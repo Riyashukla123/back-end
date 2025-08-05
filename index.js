@@ -152,91 +152,137 @@ app.delete('/:id/delete-image', async (req, res) => {
   }
 });
 
-app.get('/:id/user_property', async (req,res)=>{
-  try{
-      const {id}= req.params;
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-      console.log("Invalid ObjectId");
-      return res.status(400).json({ message: "Invalid user ID" });
-    }
-    const user= await User.findById(id);
-    if (!user) {
-      console.log("User not found for adding property");
-      return res.status(404).json({ message: "User not found" });
-    }
-    const userProps= user.properties;
-    const Props = await Promise.all(
-      userProps.map(async (propId) => {
-        const prop = await Property.findById(propId);
-        return prop ? prop.toObject() : null; 
-      })
-    );
-    const validProps = Props.filter(p => p !== null);
-    res.status(200).json({ success: true, message: 'Properties retrived successfully',data:validProps  });
-  }catch(error){
-    res.status(500).json({message:error.message});
-  }
-})
-app.post('/:id/add_property', async (req,res) => {
-  try{
-    const {id}= req.params;
+///properties api
+app.use('/property_uploads', express.static(path.join(__dirname, 'property_uploads')));
+
+const propertyUpload = multer({ dest: 'property_uploads/' });
+
+app.get('/:id/user_property', async (req, res) => {
+  try {
+    const { id } = req.params;
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       console.log("Invalid ObjectId");
       return res.status(400).json({ message: "Invalid user ID" });
     }
-    const user= await User.findById(id);
+
+    const user = await User.findById(id);
     if (!user) {
       console.log("User not found for adding property");
       return res.status(404).json({ message: "User not found" });
     }
-    const property = await  Property.create({...req.body, userId: id});
-    user.properties.push(property._id);
-    await user.save();
-    res.status(200).json({ success: true, message: 'Property added successfully', property });
 
-  } catch(error){
-    res.status(500).json({message:error.message});
+    const userProps = user.properties;
+
+    const Props = await Promise.all(
+      userProps.map(async (propId) => {
+        const prop = await Property.findById(propId);
+        if (!prop) return null;
+
+        const propObj = prop.toObject();
+
+        if (propObj.imgUrl) {
+          propObj.imgUrl = `${req.protocol}://${req.get('host')}/${propObj.imgUrl}`;
+        }
+
+        return propObj;
+      })
+    );
+
+    const validProps = Props.filter(p => p !== null);
+
+    res.status(200).json({
+      success: true,
+      message: 'Properties retrieved successfully',
+      data: validProps
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 
-app.put('/:user_id/:prop_id/update_prop', async (req, res) => {
+app.post('/:id/add_property', propertyUpload.single('image'), async (req, res) => {
   try {
-    const { user_id, prop_id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(user_id)) {
-      console.log("Invalid user ID");
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid user ID" });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(prop_id)) {
-      console.log("Invalid property ID");
-      return res.status(400).json({ message: "Invalid property ID" });
-    }
-
-    const user = await User.findById(user_id);
+    const user = await User.findById(id);
     if (!user) {
-      console.log("User not found");
       return res.status(404).json({ message: "User not found" });
     }
 
-    const ownsProperty = user.properties.some(p => p.equals(prop_id));
-    if (!ownsProperty) {
-      console.log("User does not own this property");
-      return res.status(403).json({ message: "User does not own this property" });
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ message: "No image uploaded" });
     }
 
-    const property = await Property.findById(prop_id);
+    const imagePath = `property_uploads/${file.filename}`;
+
+    const propertyData = {
+      ...req.body,
+      userId: id,
+      imgUrl: imagePath
+    };
+
+    const property = await Property.create(propertyData);
+    user.properties.push(property._id);
+    await user.save();
+
+    res.status(200).json({ message: "Property added successfully", imgUrl: imagePath });
+
+  } catch (error) {
+    console.error("Add property error:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.put('/:id/:propertyId/update_prop', propertyUpload.single('image'), async (req, res) => {
+  try {
+    const { id, propertyId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id) || !mongoose.Types.ObjectId.isValid(propertyId)) {
+      return res.status(400).json({ message: "Invalid ID(s)" });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const property = await Property.findById(propertyId);
     if (!property) {
-      console.log("Property not found");
       return res.status(404).json({ message: "Property not found" });
     }
 
-    const updated_prop = await Property.findByIdAndUpdate(prop_id, req.body, { new: true });
-    res.status(200).json({ success: true, message: "Property updated successfully", data: updated_prop });
+    Object.assign(property, req.body);
 
-  } catch (error) {
-    console.error("Error updating property:", error);
-    res.status(500).json({ message: "Internal server error" });
+    if (req.file) {
+      const imagePath = `property_uploads/${req.file.filename}`;
+      property.imgUrl = imagePath;
+    }
+
+    await property.save();
+
+   const fullImgUrl = property.imgUrl?.startsWith("http")
+  ? property.imgUrl
+  : `${req.protocol}://${req.get('host')}/${property.imgUrl}`;
+
+res.status(200).json({
+  success: true,
+  message: "Property updated successfully",
+  data: {
+    ...property.toObject(),
+    imgUrl: fullImgUrl
+  }
+});
+
+
+  } catch (err) {
+    console.error("Edit property error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -245,46 +291,44 @@ app.delete('/:user_id/:prop_id/delete_prop', async (req, res) => {
     const { user_id, prop_id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(user_id)) {
-      console.log("Invalid user ID");
       return res.status(400).json({ message: "Invalid user ID" });
     }
 
     if (!mongoose.Types.ObjectId.isValid(prop_id)) {
-      console.log("Invalid property ID");
       return res.status(400).json({ message: "Invalid property ID" });
     }
 
     const user = await User.findById(user_id);
     if (!user) {
-      console.log("User not found");
       return res.status(404).json({ message: "User not found" });
     }
 
     const ownsProperty = user.properties.some(p => p.equals(prop_id));
     if (!ownsProperty) {
-      console.log("User does not own this property");
       return res.status(403).json({ message: "User does not own this property" });
     }
 
     const property = await Property.findById(prop_id);
     if (!property) {
-      console.log("Property not found");
       return res.status(404).json({ message: "Property not found" });
     }
 
+    if (property.imgUrl) {
+      const imagePath = path.join(__dirname, property.imgUrl);
+      if (fs.existsSync(imagePath)) {
+        fs.unlink(imagePath, (err) => {
+          if (err) console.warn('Error deleting image:', imagePath);
+        });
+      }
+    }
 
     await Property.findByIdAndDelete(prop_id);
-
-  
     user.properties = user.properties.filter(p => !p.equals(prop_id));
     await user.save();
 
-    
-    const updatedUser = await User.findById(user_id).populate('properties');
-
     res.status(200).json({
       success: true,
-      message: "Property deleted successfully",
+      message: "Property and image deleted successfully"
     });
 
   } catch (error) {
