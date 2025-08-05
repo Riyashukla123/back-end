@@ -1,5 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 const User = require('./models/user.js');
 const Property = require('./models/property.js');
 const cors = require('cors');
@@ -34,9 +37,14 @@ app.post('/login_user', async (req,res)=>{
   try{
     const {email,password} = req.body;
     const existingUser = await User.findOne({email});
-    if(!existingUser) {
-      return res.status(404).send("email doesn't exist");
-    }
+    if(existingUser.password == password) {
+  const userObj = existingUser.toObject();
+  if (userObj.profileImage) {
+    userObj.profileImage = `http://localhost:5000/${userObj._id}/image?timestamp=${Date.now()}`;
+  }
+  return res.status(200).json(userObj);
+}
+
    if(existingUser.password == password) {
     return res.status(200).json(existingUser);
    }
@@ -79,6 +87,68 @@ app.put('/update_user/:id', async (req, res) => {
   } catch (error) {
     console.error("Update user error:", error);
     res.status(500).json({ message: error.message });
+  }
+});
+
+//add user profile image
+const upload = multer({ dest: 'uploads/' });
+
+app.put('/:id/upload-image', upload.single('image'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const imgPath = path.join('uploads', `${id}.jpg`);
+    fs.renameSync(req.file.path, imgPath);
+
+    user.profileImage = imgPath;
+    await user.save();
+
+    res.status(200).json({ message: "Image uploaded" });
+  } catch (err) {
+    console.error("Image upload error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.get('/:id/image', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id);
+    if (!user || !user.profileImage) {
+      return res.status(404).send("Image not found");
+    }
+
+    const imgPath = path.resolve(user.profileImage);
+    res.sendFile(imgPath);
+  } catch (err) {
+    res.status(500).send("Server error");
+  }
+});
+
+app.delete('/:id/delete-image', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id);
+    if (!user || !user.profileImage) {
+      return res.status(404).json({ message: "Image not found" });
+    }
+
+    fs.unlinkSync(path.resolve(user.profileImage));
+    user.profileImage = "";
+    await user.save();
+
+    res.status(200).json({ message: "Image deleted successfully" });
+  } catch (err) {
+    console.error("Delete image error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
