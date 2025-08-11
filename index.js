@@ -151,6 +151,45 @@ app.delete('/:id/delete-image', async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+///OVERVIEW
+
+app.get('/:id/overview', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      console.log("Invalid ObjectId");
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      console.log("User not found for overview");
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Fetch all property documents using the array of IDs
+    const properties = await Property.find({ _id: { $in: user.properties } });
+
+    // Construct overview data and total value
+    let totalValue = 0;
+    const propertyOverview = properties.map((prop) => {
+      totalValue += prop.value || 0;
+      return [prop.name, prop.value, prop.type];
+    });
+
+    // Send the response
+    res.status(200).json({
+      success: true,
+      totalValue,
+      propertyOverview
+    });
+
+  } catch (error) {
+    console.error("Error in /:id/overview:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 ///properties api
 app.use('/property_uploads', express.static(path.join(__dirname, 'property_uploads')));
