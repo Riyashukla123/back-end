@@ -259,6 +259,7 @@ app.post('/:id/add_property', propertyUpload.single('image'), async (req, res) =
     }
 
     const imagePath = `property_uploads/${file.filename}`;
+    const fullImgUrl = `${req.protocol}://${req.get('host')}/${imagePath}`;
 
     const propertyData = {
       ...req.body,
@@ -266,11 +267,13 @@ app.post('/:id/add_property', propertyUpload.single('image'), async (req, res) =
       imgUrl: imagePath
     };
 
-    const property = await Property.create(propertyData);
-    user.properties.push(property._id);
+    const prop = await Property.create(propertyData);
+    user.properties.push(prop._id);
     await user.save();
 
-    res.status(200).json({ message: "Property added successfully", imgUrl: imagePath });
+    res.status(200).json({ success:true,
+      message: "Property added successfully", imgUrl: fullImgUrl, 
+    property: { ...prop.toObject(), imgUrl: fullImgUrl }});
 
   } catch (error) {
     console.error("Add property error:", error);
