@@ -30,6 +30,5 @@ jobs:
         run: docker pull riyashukla0803/back-end:latest
 
       - name: Run Docker Container
-        run: | 
-          docker run -d -p 5000:5000 --name back-end-container -e MONGO_URI=${{ secrets.MONGO_URI }} riyashukla0803/back-end:latest
-
+        run: "docker run -d -p 5000:5000 --name back-end-container -e MONGO_URI=${{ secrets.MONGO_URI }} riyashukla0803/back-end:latest" 
+          
