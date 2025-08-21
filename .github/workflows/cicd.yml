@@ -28,6 +28,7 @@ jobs:
     steps:
       - name: Pull Image from Docker Hub
         run: docker pull riyashukla0803/back-end:latest
-
+      - name: delete old Container
+        run: docker rm -f back-end-container
       - name: Run docker Container
-        run: "docker run -d -p 5000:5000 --name back-end-container2 -e MONGO_URI=${{secrets.MONGO_URI}} riyashukla0803/back-end" 
+        run: "docker run -d -p 5000:5000 --name back-end-container -e MONGO_URI=${{secrets.MONGO_URI}} riyashukla0803/back-end" 
