@@ -13,11 +13,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Login to Docker Hub
-        run: echo "Akshukla@99190" | docker login -u riyashukla0803 --password-stdin
+        run: docker login -u ${{secrets.DOCKER_USERNAME}} -p ${{secrets.DOCKER_PASSWORD}} 
 
 
       - name: Build Docker Image
-        run: docker build -t riyashukla0803/back-end:latest .
+        run: docker build -t riyashukla0803/back-end
 
       - name: Publish Image to Docker Hub
         run: docker push riyashukla0803/back-end:latest
@@ -30,5 +30,4 @@ jobs:
         run: docker pull riyashukla0803/back-end:latest
 
       - name: Run Docker Container
-        run: "docker run -d -p 5000:5000 --name back-end-container -e MONGO_URI=${{ secrets.MONGO_URI }} riyashukla0803/back-end:latest" 
-          
+        run: "docker run -d -p 5000:5000 --name back-end-container -e MONGO_URI=${secrets.MONGO_URI} riyashukla0803/back-end" 
