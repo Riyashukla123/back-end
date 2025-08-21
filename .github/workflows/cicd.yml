@@ -17,7 +17,7 @@ jobs:
 
 
       - name: Build Docker Image
-        run: docker build -t riyashukla0803/back-end
+        run: docker build -t riyashukla0803/back-end .
 
       - name: Publish Image to Docker Hub
         run: docker push riyashukla0803/back-end:latest
