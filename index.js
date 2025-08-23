@@ -391,6 +391,6 @@ mongoose.connect(process.env.MONGO_URI).then(()=>{
 });
 
 }).catch((err)=>{
-console.log("connection failed", err);
+console.log("connection is failed", err);
 
 })
