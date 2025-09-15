@@ -9,7 +9,7 @@ const cors = require('cors');
 const app = express();
 require('dotenv').config();
 app.use(cors({
-  origin: process.env.FRONTEND_URL,
+  origin: "http://13.61.195.21:3000",
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
